@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -13,23 +17,34 @@ export class LoginService {
   ) {}
 
   async login(loginDTO: LoginDto) {
-    console.log('login', loginDTO);
-    const hashpassword = await bcrypt.hash(loginDTO.password, 10);
-    console.log('login 0');
     const check = await this.userRepository.findOneBy({
       email: loginDTO.email,
-      password: hashpassword,
     });
-    console.log('login1', check);
+
     // check account
     if (!check) {
-      console.log('error');
-      throw new Error('email or password not valid!');
+      throw new NotFoundException('email not valid!');
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+      loginDTO.password,
+      check.password,
+    );
+
+    if (!isPasswordCorrect) {
+      throw new UnauthorizedException('password not valid!');
     }
 
     // generate accessToken
-    return {
-      accessToken: this.jwt.signAsync({ email: check.email, role: check.role }),
-    };
+    try {
+      const accessToken = await this.jwt.signAsync(
+        { id: check.id, email: check.email, role: check.role },
+        { secret: 'tuyen' },
+      );
+      return { message: 'login successfully!', accesstoken: accessToken };
+    } catch (error) {
+      console.error('Error generating token:', error);
+      throw new Error('Unable to generate token');
+    }
   }
 }

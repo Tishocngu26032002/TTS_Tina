@@ -8,6 +8,6 @@ import { UsersModule } from '../../users/users.module';
 @Module({
   imports: [UsersModule, TypeOrmModule.forFeature([User])],
   controllers: [RegisterController],
-  providers: [ VerifyOTP],
+  providers: [VerifyOTP],
 })
 export class RegisterModule {}
