@@ -7,6 +7,7 @@ import { authenticator } from 'otplib';
 import * as nodemailer from 'nodemailer';
 import * as bcrypt from 'bcrypt';
 import { VerifyDto } from '../../users/dto/verify.dto';
+import { Account } from '../../Util/configConst';
 
 @Injectable()
 export class VerifyOTP {
@@ -17,31 +18,27 @@ export class VerifyOTP {
   async create(createUserDTO: CreateUserDto) {
     function sendEmail(email): any {
       const secret = email;
-      authenticator.options = { digits: 6, step: 60 };
+      authenticator.options = { digits: 6, step: 120 };
       const token = authenticator.generate(secret);
       // send otp by email
       const transporter = nodemailer.createTransport({
         service: 'Gmail',
         auth: {
-          user: 'nvt2632002work@gmail.com',
-          pass: 'qdgx khkr vbki hozr',
+          user: Account.USER,
+          pass: Account.PASS,
         },
       });
 
       const mailOptions = {
-        from: 'nvt2632002work@gmail.com',
+        from: Account.USER,
         to: email,
         subject: 'OTP Regiter Account',
-        text: `Your OTP (It is expired after 1 min) : ${token}`,
+        text: `Your OTP (It is expired after 2 min) : ${token}`,
       };
 
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-          return {
-            success: false,
-            email: '',
-            errmessage: 'Email send failed!',
-          };
+          throw new Error('REGISTER.EMAIL SEND FAILED!');
         }
       });
       return true;
@@ -51,56 +48,43 @@ export class VerifyOTP {
       email: createUserDTO.email,
     });
     // throw error exsist
-    if (chechExists && chechExists.active) {
-      return {
-        success: false,
-        email: '',
-        errmessage: 'Account exists!',
-      };
+    if (chechExists?.active) {
+      throw new Error('REGISTER.ACCOUNT EXISTS!');
     }
 
-    if (chechExists && !chechExists.active) {
+    if (!chechExists?.active) {
       sendEmail(chechExists.email);
-      return {
-        success: false,
-        email: chechExists.email,
-        errmessage: 'Account exists! Please enter OTP verify!',
-      };
+      throw new Error('REGISTER.ACCOUNT NOT VERIFY!PLEASE ENTER OTP VERIFY!');
     }
 
     // hashPassword
     const hashPassword = await bcrypt.hash(createUserDTO.password, 10);
     createUserDTO.password = hashPassword;
-    console.log(createUserDTO.password);
     // insert into db
     const user = this.userRepositotry.create(createUserDTO);
     const check = await this.userRepositotry.save(user);
     let email = null;
     // check action insert
     if (!check) {
-      throw new Error('Occur error when save user to db');
+      throw new Error('REGISTER.OCCUR ERROR WHEN SAVE TO DATABASE!');
     }
     // send email OTP
     email = check.email;
     sendEmail(email);
     return {
-      success: true,
       email: check.email,
-      errmessage: '',
     };
   }
 
   async update(verifyDTO: VerifyDto) {
-    console.log(verifyDTO);
     const token = verifyDTO.otp;
     const secret = verifyDTO.email;
 
-    authenticator.options = { digits: 6, step: 60 };
+    authenticator.options = { digits: 6, step: 120 };
     const verify = authenticator.verify({ token, secret });
 
-    console.log(verify);
     if (!verify) {
-      throw new Error('otp expire!');
+      throw new Error('REGISTER.OTP EXPIRED!');
     }
 
     const check = await this.userRepositotry.update(
@@ -109,11 +93,9 @@ export class VerifyOTP {
     );
 
     if (!check) {
-      throw new Error('update active false!');
+      throw new Error('REGISTER.UPDATE ACTIVE FAILED!');
     }
 
-    return {
-      success: true,
-    };
+    return true;
   }
 }

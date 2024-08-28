@@ -9,11 +9,13 @@ import { User } from '../../users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { LoginDto } from '../../users/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class LoginService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private jwt: JwtService,
+    private configService: ConfigService,
   ) {}
 
   async login(loginDTO: LoginDto) {
@@ -23,7 +25,7 @@ export class LoginService {
 
     // check account
     if (!check) {
-      throw new NotFoundException('email not valid!');
+      throw new NotFoundException('LOGIN.USER.EMAIL IS NOT VALID!');
     }
 
     const isPasswordCorrect = await bcrypt.compare(
@@ -32,19 +34,18 @@ export class LoginService {
     );
 
     if (!isPasswordCorrect) {
-      throw new UnauthorizedException('password not valid!');
+      throw new UnauthorizedException('LOGIN.USER.PASSWORD IS NOT VALID!');
     }
 
     // generate accessToken
     try {
       const accessToken = await this.jwt.signAsync(
         { id: check.id, email: check.email, role: check.role },
-        { secret: 'tuyen' },
+        { secret: this.configService.get('JWT_SECRET') },
       );
-      return { message: 'login successfully!', accesstoken: accessToken };
+      return accessToken;
     } catch (error) {
-      console.error('Error generating token:', error);
-      throw new Error('Unable to generate token');
+      throw new Error('LOGIN.UNABLE GENERATE TOKEN!');
     }
   }
 }

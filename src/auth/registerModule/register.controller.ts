@@ -2,6 +2,7 @@ import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { VerifyOTP } from './register.service';
 import { VerifyDto } from '../../users/dto/verify.dto';
+import { responseHandler } from '../../Util/responseUtil';
 
 @Controller('register')
 export class RegisterController {
@@ -10,11 +11,9 @@ export class RegisterController {
   async create(@Body() createUserDTO: CreateUserDto) {
     try {
       const email = await this.VerifyOTP.create(createUserDTO);
-      console.log(email);
-      return email;
+      return responseHandler.ok(email);
     } catch (err) {
-      console.log(err.message);
-      return { success: false, error: err.message };
+      return responseHandler.error(err.message);
     }
   }
 
@@ -22,10 +21,9 @@ export class RegisterController {
   async update(@Body() verifyDTO: VerifyDto) {
     try {
       const check = await this.VerifyOTP.update(verifyDTO);
-      return check;
+      return responseHandler.ok(check);
     } catch (err) {
-      console.log(err);
-      return err.message;
+      return responseHandler.error(err.message);
     }
   }
 }

@@ -17,40 +17,33 @@ export class UsersService {
       email: createUserDto.email,
     });
     // throw error exsist
-    if (chechExists && chechExists.active) {
-      return {
-        success: false,
-        email: '',
-        errmessage: 'Account exists!',
-      };
+    if (chechExists?.active) {
+      throw new Error('ACCOUNT EXSIST!');
     }
 
     // hashPassword
     const hashPassword = await bcrypt.hash(createUserDto.password, 10);
     createUserDto.password = hashPassword;
-    console.log(createUserDto.password);
+
     // insert into db
     const user = this.usersRepository.create(createUserDto);
     const check = await this.usersRepository.save(user);
     // check action insert
     if (!check) {
-      throw new Error('Occur error when save user to db');
+      throw new Error('OCCUR ERROR WHEN SAVE USER TO DB!');
     }
-
     return {
-      success: true,
       email: check.email,
-      errmessage: '',
     };
   }
 
   async findAll(page: number = 1, limit: number = 10) {
     if (page < 1) {
-      throw new Error('Page number must be greater than 0');
+      throw new Error('PAGE NUMBER MUST BE GREATER THAN 0!');
     }
 
     if (limit < 1) {
-      throw new Error('Limit must be greater than 0');
+      throw new Error('LIMIT MUST BE GREATER THAN 0!');
     }
 
     const [users, total] = await this.usersRepository.findAndCount({
@@ -58,7 +51,7 @@ export class UsersService {
       take: limit,
     });
 
-    if (!users) throw new Error('No user!');
+    if (!users) throw new Error('NO USER!');
 
     return {
       data: users,
@@ -72,7 +65,7 @@ export class UsersService {
     const user = await this.usersRepository.findOneBy({ id: id });
 
     if (!user) {
-      throw new Error('user not exists!');
+      throw new Error('USER WITH ID ${id} NOT FOUND!');
     }
     return user;
   }
@@ -81,14 +74,14 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new Error(`User with id ${id} not found`);
+      throw new Error(`USER WITH ID ${id} NOT FOUND!`);
     }
 
     Object.assign(user, updateUserDto);
 
     const check = await this.usersRepository.save(user);
 
-    if (!check) throw new Error('update not success!');
+    if (!check) throw new Error('UPDATE NOT SUCCESS!');
 
     return user;
   }
@@ -97,14 +90,14 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new Error(`User with id ${id} not found`);
+      throw new Error(`USER WITH ID ${id} NOT FOUND`);
     }
 
     user.active = false;
 
     const check = await this.usersRepository.save(user);
 
-    if (!check) throw new Error('remove not success!');
+    if (!check) throw new Error('REMOVE NOT SUCCESS!');
 
     return user;
   }

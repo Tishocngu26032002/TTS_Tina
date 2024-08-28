@@ -10,6 +10,7 @@ async function bootstrap() {
     .setDescription('internship 1 week')
     .setVersion('1.0')
     .addTag('Users')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
